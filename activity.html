@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가짜뉴스 판별 활동지</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #111;
+    color: #f0f0f0;
+    font-family: 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+    padding-bottom: 60px;
+  }
+
+  /* ── 헤더 ── */
+  .header {
+    background: #1c2b3a;
+    padding: 24px 20px 18px;
+    border-bottom: 3px solid #cc1f1f;
+  }
+  .header-label {
+    font-size: 10px; letter-spacing: 3px;
+    color: #cc1f1f; font-weight: 700;
+    text-transform: uppercase; margin-bottom: 5px;
+  }
+  .header h1 { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.3; }
+  .header p  { margin-top: 6px; font-size: 11px; color: #8a9bad; line-height: 1.6; }
+
+  /* ── 섹션 타이틀 ── */
+  .section {
+    margin: 20px 16px 0;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 14px;
+  }
+  .section-badge {
+    background: #cc1f1f;
+    color: #fff; font-size: 11px; font-weight: 800;
+    padding: 4px 10px; border-radius: 4px;
+    letter-spacing: 1px;
+  }
+  .section-title {
+    font-size: 15px; font-weight: 800; color: #fff;
+  }
+  .section-desc {
+    font-size: 12px; color: #8a9bad; line-height: 1.6;
+    margin-bottom: 14px;
+  }
+
+  /* ── 카드 ── */
+  .card {
+    background: #1c2b3a;
+    border: 1px solid #253444;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: border-color 0.2s;
+  }
+  .card.answered { border-color: #cc1f1f55; }
+
+  .news-title {
+    font-size: 14px; font-weight: 700; color: #fff;
+    line-height: 1.5; margin-bottom: 6px;
+  }
+  .news-meta {
+    font-size: 11px; color: #8a9bad; margin-bottom: 14px;
+  }
+
+  /* 진짜/가짜 버튼 */
+  .verdict-wrap {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .verdict-btn {
+    flex: 1; padding: 10px;
+    border-radius: 8px; border: 1.5px solid #2e4157;
+    background: #253444; color: #d0d8e0;
+    font-size: 14px; font-weight: 700; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .verdict-btn:hover { opacity: 0.85; }
+  .verdict-btn.real.active  { background: #1a6b3a; border-color: #2ecc71; color: #fff; }
+  .verdict-btn.fake.active  { background: #7a1010; border-color: #cc1f1f; color: #fff; }
+
+  /* 단계 선택 */
+  .step-label {
+    font-size: 11px; color: #8a9bad; margin-bottom: 8px;
+  }
+  .steps-wrap {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-bottom: 12px;
+  }
+  .step-chip {
+    padding: 6px 10px;
+    border-radius: 20px; border: 1.5px solid #2e4157;
+    background: #253444; color: #d0d8e0;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    transition: all 0.15s;
+  }
+  .step-chip.active {
+    background: #cc1f1f22; border-color: #cc1f1f; color: #fff;
+  }
+
+  /* 이유 텍스트 */
+  .reason-input {
+    width: 100%;
+    background: #253444; border: 1.5px solid #2e4157;
+    border-radius: 8px; color: #f0f0f0;
+    font-size: 13px; font-family: inherit;
+    padding: 10px 12px; resize: none; min-height: 70px;
+    outline: none; transition: border-color 0.2s; line-height: 1.6;
+  }
+  .reason-input:focus { border-color: #cc1f1f; }
+  .reason-input::placeholder { color: #4a5a6a; }
+
+  /* 정답 reveal */
+  .answer-box {
+    display: none;
+    margin-top: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 12px; line-height: 1.7;
+  }
+  .answer-box.real-ans { background: #1a3a2a; border: 1px solid #2ecc7155; color: #a8e6c0; }
+  .answer-box.fake-ans { background: #3a1a1a; border: 1px solid #cc1f1f55; color: #f0a0a0; }
+  .answer-box .ans-label { font-weight: 800; font-size: 13px; margin-bottom: 4px; }
+
+  .reveal-btn {
+    width: 100%; margin-top: 10px;
+    padding: 9px; border-radius: 8px;
+    border: 1.5px solid #2e4157; background: #253444;
+    color: #8a9bad; font-size: 12px; font-weight: 700;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .reveal-btn:hover { border-color: #8a9bad; color: #fff; }
+
+  /* ── 구분선 ── */
+  .divider {
+    height: 1px; background: #253444;
+    margin: 24px 16px;
+  }
+
+  /* ── 활동 C: 특징 찾기 ── */
+  .headline-box {
+    background: #0d0d0d;
+    border: 2px solid #cc1f1f;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .headline-text {
+    font-size: 16px; font-weight: 800;
+    color: #fff; line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .headline-source {
+    font-size: 11px; color: #cc1f1f; font-weight: 700;
+  }
+
+  .check-list { display: flex; flex-direction: column; gap: 8px; }
+  .check-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    background: #253444; border-radius: 8px;
+    border: 1.5px solid #2e4157;
+    cursor: pointer; transition: all 0.15s;
+    font-size: 13px; color: #d0d8e0; font-weight: 600;
+  }
+  .check-item.checked {
+    background: #cc1f1f22; border-color: #cc1f1f; color: #fff;
+  }
+  .check-box {
+    width: 20px; height: 20px; min-width: 20px;
+    border-radius: 4px; border: 1.5px solid #4a5a6a;
+    background: #1c2b3a; display: flex;
+    align-items: center; justify-content: center;
+    font-size: 13px; transition: all 0.15s;
+  }
+  .check-item.checked .check-box {
+    background: #cc1f1f; border-color: #cc1f1f;
+  }
+
+  /* ── 제출 ── */
+  .submit-wrap { padding: 24px 16px 0; }
+  .submit-btn {
+    width: 100%; padding: 15px;
+    background: #cc1f1f; color: #fff;
+    border: none; border-radius: 10px;
+    font-size: 15px; font-weight: 800;
+    cursor: pointer; letter-spacing: 1px;
+    transition: background 0.2s;
+  }
+  .submit-btn:hover { background: #e8312a; }
+  .submit-btn:disabled { background: #253444; color: #4a5a6a; cursor: not-allowed; }
+
+  /* ── 완료 화면 ── */
+  .done-screen {
+    display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    min-height: 70vh; padding: 40px 24px; text-align: center;
+  }
+  .done-icon { font-size: 56px; margin-bottom: 20px; }
+  .done-screen h2 { font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 10px; }
+  .done-screen p  { font-size: 14px; color: #8a9bad; line-height: 1.7; }
+  .done-red { color: #cc1f1f; font-weight: 700; }
+
+  .score-box {
+    background: #1c2b3a; border: 2px solid #cc1f1f;
+    border-radius: 12px; padding: 20px 30px;
+    margin: 20px 0;
+  }
+  .score-num { font-size: 48px; font-weight: 800; color: #cc1f1f; }
+  .score-label { font-size: 13px; color: #8a9bad; margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div id="main-wrap">
+
+  <!-- 헤더 -->
+  <div class="header">
+    <div class="header-label">Activity Sheet</div>
+    <h1>가짜뉴스 판별<br>직접 해보기</h1>
+    <p>읽고 판단하고 이유를 적어봐요.<br>정답보다 <strong style="color:#fff">근거</strong>가 더 중요해요!</p>
+  </div>
+
+  <!-- ───────────────────────────── -->
+  <!-- 활동 A: 진짜/가짜 판별        -->
+  <!-- ───────────────────────────── -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-badge">활동 A</div>
+      <div class="section-title">진짜 뉴스 vs 가짜 뉴스</div>
+    </div>
+    <div class="section-desc">
+      뉴스 제목을 읽고 진짜인지 가짜인지 골라봐요.<br>
+      판별할 때 어떤 단계를 사용했는지도 체크!
+    </div>
+
+    <!-- 뉴스 1 -->
+    <div class="card" id="news-card-1">
+      <div class="news-title">📰 "WHO, 코로나19 공식 종료 선언… '팬데믹 끝났다'"</div>
+      <div class="news-meta">2023년 5월 · 세계보건기구 발표 보도</div>
+      <div class="verdict-wrap">
+        <button class="verdict-btn real" onclick="setVerdict(1,'real',this)">✅ 진짜</button>
+        <button class="verdict-btn fake" onclick="setVerdict(1,'fake',this)">❌ 가짜</button>
+      </div>
+      <div class="step-label">어떤 단계로 판별했나요? (복수 선택 가능)</div>
+      <div class="steps-wrap" id="steps-1">
+        <div class="step-chip" onclick="toggleStep(this)">1 출처확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">2 작성자</div>
+        <div class="step-chip" onclick="toggleStep(this)">3 날짜확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">4 교차검증</div>
+        <div class="step-chip" onclick="toggleStep(this)">5 이미지</div>
+        <div class="step-chip" onclick="toggleStep(this)">6 팩트체크</div>
+        <div class="step-chip" onclick="toggleStep(this)">7 편향성</div>
+      </div>
+      <textarea class="reason-input" placeholder="왜 그렇게 생각했나요? 한 줄로 적어봐요" oninput="markAnswered('news-card-1')"></textarea>
+      <button class="reveal-btn" onclick="revealAnswer(1)">정답 확인 👀</button>
+      <div class="answer-box real-ans" id="ans-1">
+        <div class="ans-label">✅ 진짜 뉴스</div>
+        2023년 5월 5일 WHO가 공식 발표한 내용입니다. 출처(WHO 공식 사이트)와 날짜를 확인하면 쉽게 검증할 수 있어요.
+      </div>
+    </div>
+
+    <!-- 뉴스 2 -->
+    <div class="card" id="news-card-2">
+      <div class="news-title">📰 "먹으면 코로나 예방! 마늘·생강 주스, 병원에서도 권고"</div>
+      <div class="news-meta">출처 불명 · 카카오톡 공유 게시물</div>
+      <div class="verdict-wrap">
+        <button class="verdict-btn real" onclick="setVerdict(2,'real',this)">✅ 진짜</button>
+        <button class="verdict-btn fake" onclick="setVerdict(2,'fake',this)">❌ 가짜</button>
+      </div>
+      <div class="step-label">어떤 단계로 판별했나요? (복수 선택 가능)</div>
+      <div class="steps-wrap" id="steps-2">
+        <div class="step-chip" onclick="toggleStep(this)">1 출처확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">2 작성자</div>
+        <div class="step-chip" onclick="toggleStep(this)">3 날짜확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">4 교차검증</div>
+        <div class="step-chip" onclick="toggleStep(this)">5 이미지</div>
+        <div class="step-chip" onclick="toggleStep(this)">6 팩트체크</div>
+        <div class="step-chip" onclick="toggleStep(this)">7 편향성</div>
+      </div>
+      <textarea class="reason-input" placeholder="왜 그렇게 생각했나요? 한 줄로 적어봐요" oninput="markAnswered('news-card-2')"></textarea>
+      <button class="reveal-btn" onclick="revealAnswer(2)">정답 확인 👀</button>
+      <div class="answer-box fake-ans" id="ans-2">
+        <div class="ans-label">❌ 가짜 뉴스</div>
+        출처가 없고, 작성자도 불명확해요. WHO·식약처 공식 입장과도 다릅니다. '병원에서도 권고'라는 말은 근거 없는 주장이에요. 팩트체크 기관에서도 허위로 판정된 사례입니다.
+      </div>
+    </div>
+
+    <!-- 뉴스 3 -->
+    <div class="card" id="news-card-3">
+      <div class="news-title">📰 "독도는 일본 땅? 日 교과서 또 왜곡 기술 확인"</div>
+      <div class="news-meta">2024년 3월 · 연합뉴스</div>
+      <div class="verdict-wrap">
+        <button class="verdict-btn real" onclick="setVerdict(3,'real',this)">✅ 진짜</button>
+        <button class="verdict-btn fake" onclick="setVerdict(3,'fake',this)">❌ 가짜</button>
+      </div>
+      <div class="step-label">어떤 단계로 판별했나요? (복수 선택 가능)</div>
+      <div class="steps-wrap" id="steps-3">
+        <div class="step-chip" onclick="toggleStep(this)">1 출처확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">2 작성자</div>
+        <div class="step-chip" onclick="toggleStep(this)">3 날짜확인</div>
+        <div class="step-chip" onclick="toggleStep(this)">4 교차검증</div>
+        <div class="step-chip" onclick="toggleStep(this)">5 이미지</div>
+        <div class="step-chip" onclick="toggleStep(this)">6 팩트체크</div>
+        <div class="step-chip" onclick="toggleStep(this)">7 편향성</div>
+      </div>
+      <textarea class="reason-input" placeholder="왜 그렇게 생각했나요? 한 줄로 적어봐요" oninput="markAnswered('news-card-3')"></textarea>
+      <button class="reveal-btn" onclick="revealAnswer(3)">정답 확인 👀</button>
+      <div class="answer-box real-ans" id="ans-3">
+        <div class="ans-label">✅ 진짜 뉴스</div>
+        연합뉴스·YTN 등 다수 매체가 교차 보도한 사실입니다. 일본 문부과학성의 검정 결과로 확인된 내용이에요. 단, 제목이 자극적이라 편향성은 주의해서 읽어야 해요.
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ───────────────────────────── -->
+  <!-- 활동 C: 특징 찾기             -->
+  <!-- ───────────────────────────── -->
+  <div class="section">
+    <div class="section-head">
+      <div class="section-badge">활동 C</div>
+      <div class="section-title">가짜뉴스 특징 찾기</div>
+    </div>
+    <div class="section-desc">
+      아래 헤드라인을 읽고 가짜뉴스의 특징이<br>
+      어떤 게 보이는지 체크해봐요.
+    </div>
+
+    <div class="headline-box">
+      <div class="headline-text">
+        "⚠️ 충격 단독!! 국내 유명 연예인 OOO,<br>
+        실제로는 외계인이었다?! 정부가 숨긴 진실 폭로"
+      </div>
+      <div class="headline-source">출처: 진실탐구뉴스닷컴 (등록 미확인)</div>
+    </div>
+
+    <div class="check-list" id="check-list">
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        자극적인 단어 사용 (충격, 단독, 폭로)
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        출처가 불분명한 사이트
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        근거 없는 주장 ("정부가 숨긴 진실")
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        공포심·호기심을 자극하는 표현
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        작성자(기자) 이름 없음
+      </div>
+      <div class="check-item" onclick="toggleCheck(this)">
+        <div class="check-box">✓</div>
+        확인할 수 없는 익명 정보원
+      </div>
+    </div>
+
+    <div style="margin-top:14px;">
+      <div class="step-label" style="margin-bottom:8px;">이 기사, 믿을 수 있을까요?</div>
+      <div class="verdict-wrap">
+        <button class="verdict-btn real" onclick="setCVerdict('real',this)">✅ 믿을 수 있어요</button>
+        <button class="verdict-btn fake" onclick="setCVerdict('fake',this)">❌ 못 믿겠어요</button>
+      </div>
+    </div>
+
+    <textarea class="reason-input" id="c-reason" placeholder="가장 의심스러운 특징 한 가지만 골라서 이유를 적어봐요"
+      oninput="checkSubmit()"></textarea>
+  </div>
+
+  <!-- 제출 -->
+  <div class="submit-wrap">
+    <button class="submit-btn" id="submit-btn" onclick="submitAll()">활동 완료!</button>
+  </div>
+
+</div>
+
+<!-- 완료 화면 -->
+<div class="done-screen" id="done-screen">
+  <div class="done-icon">🎉</div>
+  <h2>활동 완료!</h2>
+  <div class="score-box">
+    <div class="score-num" id="score-num">0/3</div>
+    <div class="score-label">가짜뉴스 판별 정확도</div>
+  </div>
+  <p>
+    정답보다 <span class="done-red">왜 그렇게 생각했는지</span>가 더 중요해요.<br>
+    7단계를 습관처럼 쓰다 보면<br>
+    진짜와 가짜를 금방 구분할 수 있게 돼요 💪
+  </p>
+</div>
+
+<script>
+  const verdicts = { 1: null, 2: null, 3: null, c: null };
+  const correctAnswers = { 1: 'real', 2: 'fake', 3: 'real' };
+
+  function setVerdict(num, val, btn) {
+    verdicts[num] = val;
+    const wrap = btn.parentElement;
+    wrap.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(`news-card-${num}`).classList.add('answered');
+    checkSubmit();
+  }
+
+  function setCVerdict(val, btn) {
+    verdicts.c = val;
+    const wrap = btn.parentElement;
+    wrap.querySelectorAll('.verdict-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    checkSubmit();
+  }
+
+  function toggleStep(chip) {
+    chip.classList.toggle('active');
+  }
+
+  function toggleCheck(item) {
+    item.classList.toggle('checked');
+    checkSubmit();
+  }
+
+  function markAnswered(id) {
+    document.getElementById(id).classList.add('answered');
+    checkSubmit();
+  }
+
+  function revealAnswer(num) {
+    const box = document.getElementById(`ans-${num}`);
+    box.style.display = box.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function checkSubmit() {
+    const cReason = document.getElementById('c-reason').value.trim();
+    const ready = verdicts[1] && verdicts[2] && verdicts[3] && verdicts.c && cReason.length > 0;
+    document.getElementById('submit-btn').disabled = !ready;
+  }
+
+  function submitAll() {
+    let correct = 0;
+    [1,2,3].forEach(n => {
+      if (verdicts[n] === correctAnswers[n]) correct++;
+    });
+    document.getElementById('score-num').textContent = `${correct}/3`;
+    document.getElementById('main-wrap').style.display = 'none';
+    const done = document.getElementById('done-screen');
+    done.style.display = 'flex';
+  }
+
+  checkSubmit();
+</script>
+</body>
+</html>
